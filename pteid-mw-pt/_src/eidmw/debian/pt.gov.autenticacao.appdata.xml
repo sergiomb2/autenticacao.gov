@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>pt.gov.autenticacao</id>
+  <metadata_license>CC0</metadata_license>
+  <project_license>EUPL</project_license>
+  <name>Autenticação.Gov</name>
+  <summary>Autenticação.Gov Middleware for Portuguese Citizen Card and Chave Móvel Digital</summary>
+  <description>
+    <p>
+ The Autenticação.Gov package provides a utility application (eidguiV2), a set of
+ libraries and a PKCS#11 module to use the Portuguese Identity Card
+ (Cartão de Cidadão) and Chave Móvel Digital in order to authenticate securely
+ in certain websites and sign documents.	
+    </p>
+  </description>
+
+  <url type="homepage">https://www.autenticacao.gov.pt/cc-software</url>
+  <url type="bugtracker">https://svn.gov.pt/projects/ccidadao</url>
+  <project_group>GNOME</project_group>
+
+  <kudos>
+    <kudo>AppMenu</kudo>
+    <kudo>HiDpiIcon</kudo>
+    <kudo>ModernToolkit</kudo>
+    <kudo>Notifications</kudo>
+  </kudos>
+
+  <update_contact>ama@ama.pt</update_contact>
+
+  <releases>
+    <release version="MVP" date="2017-10-29">
+      <description>
+        <p>
+          This basic initial version sends files chose via the file chooser or
+          drag and drop. The Downloads directory can be set from the menu.
+        </p>
+      </description>
+    </release>
+  </releases>
+</component>
