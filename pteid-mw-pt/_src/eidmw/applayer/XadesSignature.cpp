@@ -542,7 +542,7 @@ int XadesSignature::HashSignedInfoNode(XERCES_NS DOMDocument *doc, XMLByte *hash
 
     string c14n;
     unsigned char buffer[1024];
-    xsecsize_t bytes = 0;
+    XMLSize_t bytes = 0;
     while((bytes = canonicalizer.outputBuffer(buffer, 1024)) > 0)
     {
         c14n.append( (char*)&buffer[0], size_t(bytes));
@@ -597,7 +597,7 @@ int XadesSignature::HashSignedPropertiesNode(XERCES_NS DOMDocument *doc, XMLByte
 
     string c14n;
     unsigned char buffer[1024];
-    xsecsize_t bytes = 0;
+    XMLSize_t bytes = 0;
     while((bytes = canonicalizer.outputBuffer(buffer, 1024)) > 0)
     {
         c14n.append( (char*)&buffer[0], size_t(bytes));
@@ -862,7 +862,7 @@ std::string canonicalNode(DOMNode *node, XERCES_NS DOMDocument *doc)
 
     string c14n;
     unsigned char buffer[1024];
-    xsecsize_t bytes = 0;
+    XMLSize_t bytes = 0;
     while((bytes = canonicalizer.outputBuffer(buffer, 1024)) > 0)
     {
         c14n.append((char*)&buffer[0], size_t(bytes));
@@ -1146,7 +1146,8 @@ CByteArray &XadesSignature::Sign(const char ** paths, unsigned int n_paths)
 		//sig->setDSIGNSPrefix(MAKE_UNICODE_STRING("ds"));
 
 		// Use it to create a blank signature DOM structure from the doc
-		sigNode = sig->createBlankSignature(doc, CANON_C14NE_NOC, SIGNATURE_RSA, HASH_SHA256);
+/* 		sigNode = sig->createBlankSignature(doc, CANON_C14NE_NOC, SIGNATURE_RSA, HASH_SHA256); */
+        sigNode = sig->createBlankSignature(doc, DSIGConstants::s_unicodeStrURIC14N_NOC, DSIGConstants::s_unicodeStrURIHMAC_SHA256);
 
 		//Add Id attribute to signature
 		//signature_id = (XMLCh*)generateNodeID().c_str();
@@ -1168,7 +1169,7 @@ CByteArray &XadesSignature::Sign(const char ** paths, unsigned int n_paths)
 		{
 			const char * path = unique_paths[i]->c_str();
 			//Create a reference to the external file
-			DSIGReference * ref = sig->createReference(createURI(path), HASH_SHA256);
+			DSIGReference * ref = sig->createReference(createURI(path), DSIGConstants::s_unicodeStrURIHMAC_SHA256);
 			MWLOG(LEV_DEBUG, MOD_APL, "SignXades(): Hashing file %s", path);
                 sha1_hash = HashFile(paths[i]);
 
@@ -1193,7 +1194,7 @@ CByteArray &XadesSignature::Sign(const char ** paths, unsigned int n_paths)
 
 		HashSignedPropertiesNode(sig->getParentDocument(), sha1_hash_signed_props);
 
-		DSIGReference * ref_signed_props = sig->createReference(createSignedPropertiesURI().c_str(), HASH_SHA256);
+		DSIGReference * ref_signed_props = sig->createReference(createSignedPropertiesURI().c_str(), DSIGConstants::s_unicodeStrURIHMAC_SHA256);
 		ref_signed_props->setType(XMLString::transcode("http://uri.etsi.org/01903#SignedProperties"));
 
 		setReferenceHash(sha1_hash_signed_props, SHA256_LEN, references_count, doc);
