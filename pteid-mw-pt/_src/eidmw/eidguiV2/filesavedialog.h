@@ -4,7 +4,6 @@
 #include <QQuickItem>
 #include <QFileDialog>
 #include <QUrl>
-#include <private/qguiapplication_p.h>
 #include <QtGui/qpa/qplatformdialoghelper.h>
 #include <QtGui/qpa/qplatformtheme.h>
 

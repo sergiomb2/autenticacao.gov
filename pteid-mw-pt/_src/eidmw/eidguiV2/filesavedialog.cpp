@@ -8,7 +8,6 @@
 
 FileSaveDialog::FileSaveDialog(QQuickItem *parent)
     : QQuickItem(parent)
-    , m_dlgHelper(init_helper())
     , m_modality(Qt::WindowModal)
     #if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
     , m_options(QFileDialogOptions::create())
@@ -106,13 +105,6 @@ void FileSaveDialog::setNameFilters(QStringList nameFilters)
         nameFilters_ = nameFilters;
         emit nameFiltersChanged();
     }
-}
-
-QPlatformFileDialogHelper* FileSaveDialog::init_helper()
-{
-    return static_cast<QPlatformFileDialogHelper*>(
-                QGuiApplicationPrivate::platformTheme()->createPlatformDialogHelper(QPlatformTheme::FileDialog)
-                );
 }
 
 void FileSaveDialog::open()
