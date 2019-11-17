@@ -23,7 +23,6 @@
 %endif
 
 %define svn_revision 6072
-%define app_version  3.0.17
 
 Name:           pteid-mw
 BuildRequires:  pcsc-lite-devel make swig
@@ -78,7 +77,7 @@ Conflicts:  cartao_de_cidadao
 
 License:        GPLv2+
 Group:          System/Libraries
-Version:        %{app_version}.%{svn_revision}
+Version:        3.0.20
 %if 0%{?fedora}
 Release:        1%{?dist}
 %else
@@ -87,15 +86,14 @@ Release:        1
 Summary:        Portuguese eID middleware
 Url:            https://svn.gov.pt/projects/ccidadao/
 Vendor:         Portuguese Government
-BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Source0:        pteid-mw_%{app_version}svn%{svn_revision}.tar.xz
-Source1:        pteid-mw-gui.desktop
-Source2:        pteid-scalable.svg
-Source3:        pteid-signature.png
+Source0:        https://github.com/amagovpt/autenticacao.gov/archive/v%{version}/autenticacao.gov-%{version}.tar.gz
+Patch1:         0001-Support-openssl-1.1.patch-from.patch
+Patch2:         0002-openssl1.1-support-eidguiV2.patch-from.patch
+Patch3:         0003-Support-xml-security-c-2.0.2.patch
+Patch4:         0004-add-pt.gov.autenticacao.appdata.xml.patch
+Patch5:         0005-Fedora-30-Qt-Fixup-for.patch
 
-Patch0:         support-openssl-1.1.patch
-Patch1:         fix-qt5.11-build-qicon.patch
-Patch2:         openssl1.1-support-eidguiV2.patch
+
 %if 0%{?suse_version}
 BuildRequires:  update-desktop-files unzip
 %endif
@@ -111,14 +109,17 @@ Requires(postun): /usr/bin/gtk-update-icon-cache
  libraries and a PKCS#11 module to use the Portuguese Identity Card
  (Cartão de Cidadão) and Chave Móvel Digital in order to authenticate securely
  in certain websites and sign documents.
-%prep
-%setup -q -n pteid-mw_%{app_version}svn%{svn_revision}
 
-%if 0%{?fedora} || 0%{?suse_version}
-%patch0 -p0
-%patch1 -p0
-%patch2 -p0
-%endif
+%prep
+%autosetup -p1 -n autenticacao.gov-3.0.20
+cd ..
+mv autenticacao.gov-3.0.20 autenticacao.gov-3.0.20.tmp
+mv autenticacao.gov-3.0.20.tmp/pteid-mw-pt/_src/eidmw/ autenticacao.gov-3.0.20
+cd autenticacao.gov-3.0.20
+
+# create dirs that git doesn't
+#mkdir lib jar
+mkdir -p eidlibJava/class
 
 
 %build
@@ -131,7 +132,7 @@ qmake-qt5 "PREFIX_DIR += /usr/local" "INCLUDEPATH += /usr/lib/jvm/java-1.8.0-ope
 %endif
 %endif
 
-%if 0%{?fedora} || 0%{?centos_ver}
+%if 0%{?fedora} || 0%{?rhel}
 # ./configure_fedora.sh
 qmake-qt5 "PREFIX_DIR += /usr/local" "INCLUDEPATH += /usr/lib/jvm/java-1.8.0-openjdk/include/ /usr/lib/jvm/java-1.8.0-openjdk/include/linux/" pteid-mw.pro
 %endif
@@ -173,13 +174,13 @@ install -m 644 -p eidguiV2/eidmw_en.qm $RPM_BUILD_ROOT/usr/local/bin/
 install -m 644 -p eidguiV2/eidmw_nl.qm $RPM_BUILD_ROOT/usr/local/bin/
 
 mkdir -p $RPM_BUILD_ROOT/usr/share/applications
-install -m 644 %{SOURCE1} $RPM_BUILD_ROOT/usr/share/applications
+install -m 644 debian/pteid-mw-gui.desktop $RPM_BUILD_ROOT/usr/share/applications
 
 mkdir -p $RPM_BUILD_ROOT/usr/share/icons/hicolor/scalable/apps/
-install -m 644 -p %{SOURCE2} $RPM_BUILD_ROOT/usr/share/icons/hicolor/scalable/apps/
+install -m 644 -p debian/pteid-scalable.svg $RPM_BUILD_ROOT/usr/share/icons/hicolor/scalable/apps/
 
 mkdir -p $RPM_BUILD_ROOT/usr/share/pixmaps
-install -m 644 -p %{SOURCE3} $RPM_BUILD_ROOT/usr/share/pixmaps
+install -m 644 -p debian/pteid-signature.png $RPM_BUILD_ROOT/usr/share/pixmaps
 mkdir -p $RPM_BUILD_ROOT/usr/share/mime/packages
 
 %if 0%{?suse_version}
@@ -245,7 +246,7 @@ if [ "$1" = "0" ]; then
 rm -rf /usr/local/lib/libpteidcommon.so
 rm -rf /usr/local/lib/libpteidcommon.so.2
 rm -rf /usr/local/lib/libpteidcommon.so.2.0
-rm -rf /usr/local/lib/libpteiddialogsQT.so              
+rm -rf /usr/local/lib/libpteiddialogsQT.so
 rm -rf /usr/local/lib/libpteiddialogsQT.so.2
 rm -rf /usr/local/lib/libpteiddialogsQT.so.2.2
 rm -rf /usr/local/lib/libpteidcardlayer.so
@@ -286,6 +287,9 @@ fi
 /usr/local/share/certs
 
 %changelog
+* Sun Nov 17 2019 Sérgio Basto <sergio@serjux.com> - 3.0.20-1
+- 3.0.20
+
 * Tue Apr 16 2019 Andre Guerreiro <andre.guerreiro@caixamagica.pt>
   PDF Signature fixes
   Proxy support in SCAP signature
