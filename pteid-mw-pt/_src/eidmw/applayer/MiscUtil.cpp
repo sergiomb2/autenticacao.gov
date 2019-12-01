@@ -23,6 +23,7 @@
 #include <openssl/evp.h>
 #include <openssl/buffer.h>
 #include <openssl/pem.h>
+#include <openssl/err.h>
 
 #ifdef WIN32
 #include <Windows.h>
@@ -38,6 +39,8 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+
+#include <memory>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -249,18 +252,21 @@ std::vector<std::string> toPEM(char *p_certificate, int certificateLen) {
     return certs;
 }
 
+using BIO_MEM_ptr = std::unique_ptr<BIO, decltype(&::BIO_free)>;
+
+
 /*  *********************************************************
     ***          X509_to_PEM()                            ***
     ********************************************************* */
 char *X509_to_PEM(X509 *x509) {
 
-    BIO *bio = NULL;
     char *pem = NULL;
+    int rc = 0;
 
     if ( NULL == x509 ) {
         return NULL;
     }
-
+/*
     bio = BIO_new( BIO_s_mem() );
     if ( NULL == bio ) {
         return NULL;
@@ -270,7 +276,7 @@ char *X509_to_PEM(X509 *x509) {
         BIO_free( bio );
         return NULL;
     }
-
+    
     pem = (char *) malloc( bio->num_write + 1 );
     if ( NULL == pem ){
         BIO_free(bio);
@@ -279,8 +285,28 @@ char *X509_to_PEM(X509 *x509) {
 
     memset( pem, 0, bio->num_write + 1 );
     BIO_read( bio, pem, bio->num_write );
-    BIO_free( bio );
+    */
+    BIO_MEM_ptr bio(BIO_new(BIO_s_mem()), ::BIO_free);
 
+    rc = PEM_write_bio_X509(bio.get(), x509);
+    long err = ERR_get_error();
+
+    if (rc != 1)
+    {
+        fprintf(stderr, "PEM_write_bio_X509 failed, error 0x%08x\n", err);
+        return NULL;
+    }
+
+    BUF_MEM *mem = NULL;
+    BIO_get_mem_ptr(bio.get(), &mem);
+    err = ERR_get_error();
+    //TODO: handle this error
+
+//    string pem(mem->data, mem->length);
+//    BIO_free( bio );
+    //XXX: this is probably broken... needs testing
+    //
+    pem = strdup(mem->data); 
     return pem;
 }
 

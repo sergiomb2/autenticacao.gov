@@ -228,14 +228,6 @@ public:
 	FWK_CertifStatus GetOCSPResponse(const CByteArray &cert, const CByteArray &issuer, CByteArray *response);
 
 	/**
-	  * Send a OCSP request and get the response
-	  * If issuer is not NULL, the verification of the response is done
-	  * Throw exception if something unwanted append (no connection...)
-	  * @return The status
-	  */
-	FWK_CertifStatus GetOCSPResponse(const char *pUrlResponder,const tOcspCertID &certid, CByteArray *response,const CByteArray *issuer=NULL);
-
-	/**
 	  * Return the Url of the OCSP responder
 	  * @return true if OCSP responder found
 	  */
@@ -405,7 +397,7 @@ protected:
 	/**
 	  * Verify the validity date of the crl
 	  */
-	bool VerifyCrlDateValidity(const X509_CRL *pX509_Crl);
+	bool VerifyCrlDateValidity(X509_CRL *pX509_Crl);
 
 	/**
 	  * Check if the crl has the issuer (issuer)

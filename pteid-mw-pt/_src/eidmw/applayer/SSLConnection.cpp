@@ -158,15 +158,15 @@ void SSLConnection::loadCertChain(X509_STORE *store, APL_Certif * authentication
 
 		if (issuer == NULL)
 		{
-			break;
 			MWLOG(LEV_DEBUG, MOD_APL, "loadCertChain exited early without finding root: incomplete chain");
+			break;
 		}
 
 		MWLOG(LEV_DEBUG, MOD_APL, "loadCertChain: Loading cert: %s", issuer->getOwnerName());
 		const unsigned char *cert_data = issuer->getData().GetBytes();
-	    pCert = d2i_X509(&pCert, &cert_data, issuer->getData().Size());
+	        pCert = d2i_X509(&pCert, &cert_data, issuer->getData().Size());
 
-	    if (pCert == NULL)
+	        if (pCert == NULL)
 		{
 			char *parsing_error = ERR_error_string(ERR_get_error(), NULL);
 			MWLOG(LEV_ERROR, MOD_APL, L"SSLConnection::loadCertChain: Error parsing certificate #%d. Details: %s",
@@ -183,9 +183,10 @@ void SSLConnection::loadCertChain(X509_STORE *store, APL_Certif * authentication
 		}
 		pCert = NULL;
 		certif = issuer;
+		MWLOG(LEV_DEBUG, MOD_APL, "Added certificate with subject: %s", certif->getLabel());
 		i++;
 	}
-
+	
 }
 
 
@@ -980,12 +981,27 @@ void SSLConnection::connect_encrypted(char* host_and_port)
 
     RSA *rsa = RSA_new();
 
-    rsa->flags |= RSA_FLAG_SIGN_VER;
+    BIGNUM * privkey_n = NULL;
+    BIGNUM * privkey_e = NULL;
+    const char * dummy_modulus = "00f32f95bfc90606348541f6a247955949cddbb4970ab7b07d72c1eb6f498fb48613030831950d14f2aaf2c066d5f7f0974bb536fe01eeceec14d97ec78a762bfdb982c82ef401e0aae81cb6c7c9ce43288cd971fda8aa3003b8eda33e915cc999730e4fa2ee28a704aff556fa12b3b6b3134f21a180e5906d14dd9a63ab179a1c234ad3e9ca796eef9efcf1358052abf182e0c85c3e4945d3082090dae0b686c199f24cb6451f7f859e06114f16f51b805d2818e9c3f6476d5a1dc12b397343cf6056fa186af2946003160fddf562c6decac4ccfc6f335a7e3f78f441a90fd05c3a80f7789f643106441af14d3c3cfe81b8dee6441065f9f6163019652f5af19d";
+    const char * dummy_exp = "10001";
+ 
+    BN_hex2bn(&privkey_n, dummy_modulus);
+    BN_hex2bn(&privkey_e, dummy_exp);
 
-    RSA_METHOD *current_method = (RSA_METHOD *)RSA_PKCS1_SSLeay();
-    current_method->rsa_sign = eIDMW::rsa_sign;
-    current_method->flags |= RSA_FLAG_SIGN_VER;
-    current_method->flags |= RSA_METHOD_FLAG_NO_CHECK;
+    RSA_set0_key(rsa, privkey_n, privkey_e, NULL);
+
+    //XXX: not needed anymore ??
+    //RSA_set_flags(rsa, RSA_FLAG_SIGN_VER);
+
+    //OpenSSL 1.1 migration: test this
+//    RSA_METHOD *current_method = (RSA_METHOD *)RSA_PKCS1_SSLeay();
+//    current_method->rsa_sign = eIDMW::rsa_sign;
+//    current_method->flags |= RSA_METHOD_FLAG_NO_CHECK;
+    RSA_METHOD * current_method = (RSA_METHOD *) RSA_get_default_method();
+
+    RSA_meth_set_sign(current_method, eIDMW::rsa_sign);
+    RSA_meth_set_flags(current_method, RSA_METHOD_FLAG_NO_CHECK);
 
     RSA_set_method(rsa, current_method);
 
@@ -1409,4 +1425,5 @@ bool SSLConnection::InitSAMConnection()
 
     return true;
 }
+
 }

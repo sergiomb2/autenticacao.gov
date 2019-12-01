@@ -111,31 +111,33 @@ void add_signed_time(PKCS7_SIGNER_INFO *si)
 unsigned int SHA256_Wrapper(unsigned char *data, unsigned long data_len, unsigned char *digest)
 {
 
-	EVP_MD_CTX cmd_ctx;
+	EVP_MD_CTX *cmd_ctx = EVP_MD_CTX_new();
 	unsigned int md_len = 0;
 
 	//Calculate the hash from the data
-	EVP_DigestInit(&cmd_ctx, EVP_sha256());
-	EVP_DigestUpdate(&cmd_ctx, data, data_len);
-    EVP_DigestFinal(&cmd_ctx, digest, &md_len);
+	EVP_DigestInit(cmd_ctx, EVP_sha256());
+	EVP_DigestUpdate(cmd_ctx, data, data_len);
+	EVP_DigestFinal(cmd_ctx, digest, &md_len);
+
+	EVP_MD_CTX_free(cmd_ctx);
 
 	return md_len;
-
 }
 
 unsigned int SHA1_Wrapper(unsigned char *data, unsigned long data_len, unsigned char *digest)
 {
 
-	EVP_MD_CTX cmd_ctx;
+	EVP_MD_CTX *cmd_ctx = EVP_MD_CTX_new();
 	unsigned int md_len = 0;
 
 	//Calculate the hash from the data
-	EVP_DigestInit(&cmd_ctx, EVP_sha1());
-	EVP_DigestUpdate(&cmd_ctx, data, data_len);
-    EVP_DigestFinal(&cmd_ctx, digest, &md_len);
+	EVP_DigestInit(cmd_ctx, EVP_sha1());
+	EVP_DigestUpdate(cmd_ctx, data, data_len);
+	EVP_DigestFinal(cmd_ctx, digest, &md_len);
+
+	EVP_MD_CTX_free(cmd_ctx);
 
 	return md_len;
-
 }
 
 
@@ -179,8 +181,8 @@ typedef unsigned int
  *
 */
 
-int append_tsp_token(PKCS7_SIGNER_INFO *sinfo, unsigned char *token, int token_len)
-{
+int append_tsp_token(PKCS7_SIGNER_INFO *sinfo, unsigned char *token, int token_len) {
+
 
 	TS_RESP *tsresp = d2i_TS_RESP(NULL, (const unsigned char**)&token, token_len);
 
@@ -196,7 +198,7 @@ int append_tsp_token(PKCS7_SIGNER_INFO *sinfo, unsigned char *token, int token_l
 	if (tsresp != NULL)
 	{
 		TS_VERIFY_CTX * verify_ctx = TS_VERIFY_CTX_new();
-		verify_ctx->flags = TS_VFY_VERSION;
+        TS_VERIFY_CTX_set_flags(verify_ctx, TS_VFY_VERSION);
 
 		if (TS_RESP_verify_response(verify_ctx, tsresp) != 1) {
 
@@ -209,7 +211,7 @@ int append_tsp_token(PKCS7_SIGNER_INFO *sinfo, unsigned char *token, int token_l
 
 		TS_VERIFY_CTX_free(verify_ctx);
 
-		PKCS7* token = tsresp->token;
+		PKCS7* token = TS_RESP_get_token(tsp);
 
 		int p7_len = i2d_PKCS7(token, NULL);
 		unsigned char *p7_der = (unsigned char *)OPENSSL_malloc(p7_len);
@@ -239,6 +241,7 @@ int append_tsp_token(PKCS7_SIGNER_INFO *sinfo, unsigned char *token, int token_l
 		return 1;
 	}
 
+
 	return 0;
 
 }
@@ -246,6 +249,9 @@ int append_tsp_token(PKCS7_SIGNER_INFO *sinfo, unsigned char *token, int token_l
 
 void add_signingCertificate(PKCS7_SIGNER_INFO *si, X509 *x509, unsigned char * cert_data, unsigned long cert_len)
 {
+	/* This function is only supported in OpenSSL 1.0.2 for now */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+
 	ASN1_STRING *seq = NULL;
 	unsigned char cert_sha256_sum[SHA256_LEN];
 	unsigned char *p, *pp = NULL;
@@ -258,6 +264,8 @@ void add_signingCertificate(PKCS7_SIGNER_INFO *si, X509 *x509, unsigned char * c
 
 	SHA256_Wrapper(cert_data, cert_len, cert_sha256_sum);
 
+	/* TODO: OpenSSL 1.1 migration - test this */
+
 	/* Create the SigningCertificateV2 attribute. */
 
 	if (!(sc = ESS_SIGNING_CERT_new()))
@@ -266,9 +274,12 @@ void add_signingCertificate(PKCS7_SIGNER_INFO *si, X509 *x509, unsigned char * c
 	/* Adding the signing certificate id. */
 	if (!(cid = ESS_CERT_ID_new()))
 		goto end;
-	if (!ASN1_OCTET_STRING_set(cid->hash, cert_sha256_sum,
+	cid = ess_CERT_ID_new_init(x509, 0);
+
+	/*if (!ASN1_OCTET_STRING_set(cid->hash, cert_sha256_sum,
 		sizeof(cert_sha256_sum)))
 		goto end;
+		*/
 
 	//Add Issuer and Serial Number
 
@@ -309,6 +320,8 @@ void add_signingCertificate(PKCS7_SIGNER_INFO *si, X509 *x509, unsigned char * c
 
 	end:
 	MWLOG(LEV_ERROR, MOD_APL, L"Failed to add SigningCertificateV2 attribute.");
+
+#endif //OPENSSL_VERSION_NUMBER	
 }
 
 void addCardCertificateChain(PKCS7 *p7) 
